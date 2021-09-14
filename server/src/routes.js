@@ -31,14 +31,10 @@ const checkisAuth = (req, res, next) => {
  */
 router.post('/auth/login', async (req, res, next) => {
   try {
-console.log(req.body);
+    console.log(req.body);
     const filePath = path.resolve(process.cwd(), 'cli.js');
     const { client } = req.body;
-    const child = spawn('node', [
-      filePath,
-      'auth:login',
-      `${client}`,
-    ]);
+    const child = spawn('node', [filePath, 'auth:login', `${client}`]);
 
     let requestResult = '';
     child.stdout.on('data', (data) => {
@@ -55,6 +51,7 @@ console.log(req.body);
         next(1);
         return;
       }
+      req.session.isAuthenticated = true;
       res.status(200).json(requestResult);
     });
 
@@ -98,6 +95,7 @@ router.post('/client/login', async (req, res, next) => {
         next();
         return;
       }
+      req.session.isAuthenticated = true;
       res.status(200).json({ login: true, token: Math.random(50000) });
     });
 
@@ -149,6 +147,7 @@ router.get('/dwjson/login', async (req, res, next) => {
         next(code);
         return;
       }
+      req.session.isAuthenticated = true;
       res.status(200).json({ login: true, token: Math.random(50000) });
     });
 
@@ -180,6 +179,7 @@ router.get('/logout', async (req, res, next) => {
         next(code);
         return;
       }
+      req.session.destroy();
       res.status(200).json(code);
     });
 
@@ -195,6 +195,10 @@ router.get('/logout', async (req, res, next) => {
  * Get realm list
  */
 router.get('/sandbox/realms/list', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const filePath = path.resolve(process.cwd(), 'cli.js');
     var returnData = '';
@@ -229,6 +233,10 @@ router.get('/sandbox/realms/list', async (req, res, next) => {
  * Add sandbox
  */
 router.post('/sandbox/create', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const {
       ttl,
@@ -239,29 +247,30 @@ router.post('/sandbox/create', async (req, res, next) => {
       autoSchedule,
     } = req.body;
     const filePath = path.resolve(process.cwd(), 'cli.js');
-    var returnData = '', child='';
+    var returnData = '',
+      child = '';
 
     if (autoSchedule) {
       child = spawn('node', [
-          filePath,
-          'sandbox:create',
-          `--ttl=${ttl}`,
-          `--realm=${realmId}`,
-          `--profile=${profile}`,
-          `--auto-scheduled`,
-          '-j',
-        ]);
+        filePath,
+        'sandbox:create',
+        `--ttl=${ttl}`,
+        `--realm=${realmId}`,
+        `--profile=${profile}`,
+        `--auto-scheduled`,
+        '-j',
+      ]);
     } else {
       child = spawn('node', [
-          filePath,
-          'sandbox:create',
-          `--ttl=${ttl}`,
-          `--realm=${realmId}`,
-          `--profile=${profile}`,
-          // `--ocapi-settings=${ocapiSettings}`,
-          // `--webdav-settings=${webdavSettings}`,
-          '-j',
-        ]);
+        filePath,
+        'sandbox:create',
+        `--ttl=${ttl}`,
+        `--realm=${realmId}`,
+        `--profile=${profile}`,
+        // `--ocapi-settings=${ocapiSettings}`,
+        // `--webdav-settings=${webdavSettings}`,
+        '-j',
+      ]);
     }
 
     child.stdout.on('data', (data) => {
@@ -289,30 +298,29 @@ router.post('/sandbox/create', async (req, res, next) => {
   }
 });
 
-
 /**
  * Update sandbox
  */
- router.patch('/sandbox/update/:sandBoxId', async (req, res, next) => {
+router.patch('/sandbox/update/:sandBoxId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { sandBoxId } = req.params;
-    const {
-      ttl,
-      autoSchedule,
-    } = req.body;
+    const { ttl, autoSchedule } = req.body;
     const filePath = path.resolve(process.cwd(), 'cli.js');
     var returnData = '';
     // console.log(ttl, autoSchedule, sandBoxId)
     // res.status(200).json(autoSchedule);
 
     const child = spawn('node', [
-        filePath,
-        'sandbox:update',
-        `--sandbox=${sandBoxId}`,
-        `--ttl=${ttl}`,
-        `--auto-scheduled=${autoSchedule}`,
-      ]);
-
+      filePath,
+      'sandbox:update',
+      `--sandbox=${sandBoxId}`,
+      `--ttl=${ttl}`,
+      `--auto-scheduled=${autoSchedule}`,
+    ]);
 
     child.stdout.on('data', (data) => {
       returnData += data.toString();
@@ -342,6 +350,10 @@ router.post('/sandbox/create', async (req, res, next) => {
  * Get realm usages
  */
 router.get('/sandbox/realms/list/:realmId/:topic', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { realmId, topic } = req.params;
 
@@ -388,6 +400,10 @@ router.get('/sandbox/realms/list/:realmId/:topic', async (req, res, next) => {
  * Get realm configuration
  */
 router.get('/sandbox/realm/config/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { realmId } = req.params;
 
@@ -428,6 +444,10 @@ router.get('/sandbox/realm/config/:realmId', async (req, res, next) => {
 
 // update realm configuration
 router.patch('/sandbox/realm/config/update', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const filePath = path.resolve(process.cwd(), 'cli.js');
     const { formArr, maxSandboxTtl, defaultSandboxTtl } = req.body;
@@ -474,6 +494,10 @@ router.patch('/sandbox/realm/config/update', async (req, res, next) => {
 
 // sandbox:list lands here
 router.get('/sandbox/list', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const filePath = path.resolve(process.cwd(), 'cli.js');
     const child = spawn('node', [filePath, 'sandbox:list', `-j`]);
@@ -506,6 +530,10 @@ router.get('/sandbox/list', async (req, res, next) => {
 
 // sandbox:list  --show-deleted lands here
 router.get('/sandbox/list/:deleted', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { deleted } = req.params;
     var returnData = '';
@@ -546,6 +574,10 @@ router.get('/sandbox/list/:deleted', async (req, res, next) => {
 
 // sandbox:get -details of individual sandbox
 router.get('/sandbox/stats/:id/:topic', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id, topic } = req.params;
     var returnData = '';
@@ -590,6 +622,10 @@ router.get('/sandbox/stats/:id/:topic', async (req, res, next) => {
 
 // start sandbox
 router.get('/sandbox/start/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -622,6 +658,10 @@ router.get('/sandbox/start/:id', async (req, res, next) => {
 
 // stop sandbox
 router.get('/sandbox/stop/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -653,6 +693,10 @@ router.get('/sandbox/stop/:id', async (req, res, next) => {
 
 // restart sandbox
 router.get('/sandbox/restart/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -688,6 +732,10 @@ router.get('/sandbox/restart/:id', async (req, res, next) => {
 
 // reset sandbox
 router.get('/sandbox/reset/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -724,6 +772,10 @@ router.get('/sandbox/reset/:id', async (req, res, next) => {
 
 // delete sandbox
 router.get('/sandbox/delete/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -760,6 +812,10 @@ router.get('/sandbox/delete/:id', async (req, res, next) => {
 
 // sandbox list of links  to open in browser
 router.get('/sandbox/link/:id', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { id, topic } = req.params;
     var returnData = '';
@@ -798,6 +854,10 @@ router.get('/sandbox/link/:id', async (req, res, next) => {
 
 // start sandbox
 router.get('/sandbox/start-all/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { realmId } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -852,6 +912,10 @@ router.get('/sandbox/start-all/:realmId', async (req, res, next) => {
 });
 // stop sandbox
 router.get('/sandbox/stop-all/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { realmId } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -907,6 +971,10 @@ router.get('/sandbox/stop-all/:realmId', async (req, res, next) => {
 
 // restart sandbox
 router.get('/sandbox/restart-all/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { realmId } = req.params;
     const filePath = path.resolve(process.cwd(), 'cli.js');
@@ -962,6 +1030,10 @@ router.get('/sandbox/restart-all/:realmId', async (req, res, next) => {
 
 // create an api to add the credit history
 router.post('/credit/add', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     const { credit, realmId, purchaseDate, linkToTicket, autoRenewal } =
       req.body;
@@ -989,6 +1061,10 @@ router.post('/credit/add', async (req, res, next) => {
 
 // create an api to get the credit history
 router.get('/credit/get-list/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     //id is realm id
     const { realmId } = req.params;
@@ -1000,10 +1076,7 @@ router.get('/credit/get-list/:realmId', async (req, res, next) => {
     })
       .then((credits) => res.status(200).json(credits))
       .catch((err) => {
-        console.log(
-          'There was an error querying credits',
-          JSON.stringify(err),
-        );
+        console.log('There was an error querying credits', JSON.stringify(err));
         res.status(400).json('Error');
         // return res.send(err)
       });
@@ -1014,6 +1087,10 @@ router.get('/credit/get-list/:realmId', async (req, res, next) => {
 
 // create an api to delete the credit history by its id
 router.delete('/credit/delete/:creditId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     var id = parseInt(req.params.creditId);
     return db.Credit.findOne({
@@ -1041,6 +1118,10 @@ router.delete('/credit/delete/:creditId', async (req, res, next) => {
 
 // create an api to get the credit history
 router.get('/credits-usage/:realmId', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     //id is realm id
     const { realmId } = req.params;
@@ -1118,6 +1199,10 @@ router.get('/credits-usage/:realmId', async (req, res, next) => {
 
 // create an api to send the mail
 router.get('/notify-user', async (req, res, next) => {
+  if (!req.session.isAuthenticated) {
+    res.status(401);
+    return next();
+  }
   try {
     //fetch credits list from DB functionality
     realmId = 'bfxt';
