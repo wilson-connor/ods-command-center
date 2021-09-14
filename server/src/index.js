@@ -23,7 +23,7 @@ app.use(morgan('tiny'));
 
 app.use(
   session({
-    secret: 'mySecret',
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     isAuthenticated: false,
