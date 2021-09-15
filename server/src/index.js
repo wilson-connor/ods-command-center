@@ -32,6 +32,9 @@ app.use(
     },
   }),
 );
+/* Note: the current implementation for session storage uses express-session's in-memory storage.
+The documentation recommends using a separate store. The list of supported options can be found
+here: https://www.npmjs.com/package/express-session */
 
 app.use(logger);
 
