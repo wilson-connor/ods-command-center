@@ -154,10 +154,12 @@ function Sandbox(props) {
 
               <MenuList>
                 {Object.keys(sandBoxLinks).map((key) => (
-                  <MenuItem key={key}>
-                    <Link to={{ pathname: sandBoxLinks[key] }} target='_blank'>
-                      {key}
-                    </Link>
+                  <MenuItem key={key} as="a"
+                  href={sandBoxLinks[key]}
+                  target="_blank"
+                  // onClick={() => window.open(sandBoxLinks[key], "_blank")}
+                  >
+                    {key}
                   </MenuItem>
                 ))}
               </MenuList>
